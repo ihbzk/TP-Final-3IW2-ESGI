@@ -1,0 +1,107 @@
+version: '2.0'
+services:
+
+###########################################################################################
+################################### SITE 1 ################################################
+###########################################################################################
+  
+  #PHP Service 1
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/var/www/html/
+    networks:
+      - app-network
+    
+  #Nginx Service 1
+  webserver:
+    image: nginx:alpine
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www/html/
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - app-network
+
+
+  #Node Service
+  node-1: 
+    image: node:alpine
+    volumes: 
+      - ./:/var/www/html/
+    working_dir: /var/www/html/app
+    command: sh -c "npm install && npm run build"
+
+###########################################################################################
+################################### SITE 2 ################################################
+###########################################################################################  
+
+#PHP Service 2
+  app2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./src:/var/www/html/
+    networks:
+      - app-network
+
+  #Nginx Service
+  webserver2:
+    image: nginx:alpine
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "81:80"
+      - "444:443"
+    volumes:
+      - ./src:/var/www/html/
+      - ./src/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - app-network
+
+  #Node Service
+  node-2: 
+    image: node:alpine
+    volumes: 
+      - ./src:/var/www/html/
+    working_dir: /var/www/html/app
+    command: sh -c "npm install && npm run build"
+
+###########################################################################################
+################################### DATABASE ##############################################
+###########################################################################################   
+#MySQL Service
+  db:
+    image: mysql:5.7.32
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: tp_final
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql/
+      - ./mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - app-network
+ 
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
+#Volumes
+volumes:
+  dbdata:
+    driver: local
